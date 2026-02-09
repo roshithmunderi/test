@@ -27,8 +27,9 @@ let isDrawing = false;
 let last = {x:0,y:0};
 let revealed = false;
 
-const yesPhoneNumber = '+919567466686';
-let secretCode = 'appi biju';
+const yesPhoneNumber = '';
+let secretCodeHash = 'b6fa82664d2e038ca39d0b21d5f899f5e3c4135dd04a9065fbaf748680315e4c';
+let legacySecretCode = '';
 let secretHint = 'our little word';
 let fullMessage = '';
 let typingTimer = null;
@@ -51,6 +52,17 @@ function rand(min,max){ return Math.random()*(max-min)+min }
 
 function normalizeCode(value){
   return (value || '').trim().toLowerCase();
+}
+
+async function sha256Hex(value){
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  const arr = Array.from(new Uint8Array(digest));
+  return arr.map((b)=> b.toString(16).padStart(2, '0')).join('');
+}
+
+function hasConfiguredCode(){
+  return Boolean(secretCodeHash || legacySecretCode);
 }
 
 function setBuddyMood(mode, text){
@@ -102,6 +114,7 @@ function applyPersonalization(){
     const msg = params.get('msg') || params.get('message') || '';
     const photoUrl = params.get('photo') || '';
     const codeParam = params.get('code') || '';
+    const codeHashParam = params.get('codeHash') || params.get('codehash') || '';
     const hintParam = params.get('hint') || '';
     const titleEl = document.getElementById('pageTitle');
     const subEl = document.getElementById('pageSubtitle');
@@ -113,7 +126,14 @@ function applyPersonalization(){
       photo.style.backgroundImage = `url(${photoUrl})`;
       hasPhotoFromParams = true;
     }
-    if(codeParam) secretCode = codeParam;
+    if(codeHashParam){
+      secretCodeHash = normalizeCode(codeHashParam);
+      legacySecretCode = '';
+    }else if(codeParam){
+      // Backward compatibility: plain code links still work.
+      legacySecretCode = normalizeCode(codeParam);
+      secretCodeHash = '';
+    }
     if(hintParam) secretHint = hintParam;
     if(codeHint) codeHint.textContent = `Hint: ${secretHint}`;
   }catch(e){ /* ignore */ }
@@ -122,7 +142,7 @@ function applyPersonalization(){
 applyPersonalization();
 applyPhotoFromBase64File();
 cacheMessage();
-requiresCode = normalizeCode(secretCode).length > 0;
+requiresCode = hasConfiguredCode();
 if(requiresCode){
   if(codeHint && !codeHint.textContent) codeHint.textContent = `Hint: ${secretHint}`;
   document.body.classList.add('locked');
@@ -134,7 +154,7 @@ if(requiresCode){
 }
 
 function unlockGate(){
-  requiresCode = normalizeCode(secretCode).length > 0;
+  requiresCode = hasConfiguredCode();
   document.body.classList.remove('locked');
   document.body.classList.add('gate-unlocked');
   if(codeError) codeError.textContent = '';
@@ -142,7 +162,7 @@ function unlockGate(){
   setBuddyMood('curious', 'Great. Now scratch the silver layer.');
 }
 
-function tryUnlock(){
+async function tryUnlock(){
   if(!requiresCode){
     unlockGate();
     return;
@@ -154,9 +174,18 @@ function tryUnlock(){
     if(codeGate) codeGate.querySelector('.code-card')?.classList.remove('shake');
     return;
   }
-  if(guess === normalizeCode(secretCode)){
-    unlockGate();
-  }else{
+  try{
+    let matched = false;
+    if(secretCodeHash && crypto?.subtle){
+      const guessHash = await sha256Hex(guess);
+      matched = guessHash === secretCodeHash;
+    }else if(legacySecretCode){
+      matched = guess === legacySecretCode;
+    }
+    if(matched){
+      unlockGate();
+      return;
+    }
     if(codeError) codeError.textContent = 'Not quite. Try again.';
     const cardEl = codeGate ? codeGate.querySelector('.code-card') : null;
     if(cardEl){
@@ -164,6 +193,8 @@ function tryUnlock(){
       void cardEl.offsetWidth;
       cardEl.classList.add('shake');
     }
+  }catch(e){
+    if(codeError) codeError.textContent = 'Not quite. Try again.';
   }
 }
 
@@ -319,7 +350,7 @@ function onFullyRevealed(){
 }
 
 function lockGate(){
-  requiresCode = normalizeCode(secretCode).length > 0;
+  requiresCode = hasConfiguredCode();
   if(!requiresCode){
     document.body.classList.remove('locked');
     document.body.classList.add('gate-unlocked');
