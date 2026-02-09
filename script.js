@@ -28,7 +28,7 @@ let last = {x:0,y:0};
 let revealed = false;
 
 const yesPhoneNumber = '+919567466686';
-let secretCode = 'love';
+let secretCode = 'appi biju';
 let secretHint = 'our little word';
 let fullMessage = '';
 let typingTimer = null;
