@@ -315,6 +315,22 @@ body.sad .backdrop{
 
 .revealed #surpriseText{animation:inkIn .65s ease both}
 
+/* Ensure no residual blur after reveal */
+.revealed .surprise-to{
+  opacity:1;
+  transform:none;
+}
+
+.revealed .to-char{
+  opacity:1;
+  transform:none;
+  filter:none;
+}
+
+.revealed #surpriseText{
+  filter:none;
+}
+
 .typing{
   border-right:2px solid rgba(255,255,255,0.7);
   padding-right:2px;
@@ -345,6 +361,12 @@ body.sad .backdrop{
 .btn:hover{transform:translateY(-1px);filter:saturate(1.08)}
 .btn:active{transform:translateY(1px) scale(.98)}
 .btn:focus-visible{outline:2px solid rgba(255,255,255,0.45);outline-offset:2px}
+.btn:disabled{
+  opacity:0.6;
+  cursor:not-allowed;
+  filter:saturate(0.6);
+  box-shadow:none;
+}
 
 .btn.secondary{
   background:rgba(255,255,255,0.06);
@@ -500,6 +522,57 @@ body.sad .backdrop{
   display:flex;
   gap:10px;
   flex-wrap:wrap;
+}
+
+.reply-box{
+  display:none;
+  margin-top:14px;
+  padding:12px;
+  border-radius:14px;
+  border:1px solid var(--panel-border);
+  background:linear-gradient(180deg, var(--chip-bg-1), rgba(0,0,0,0.12));
+  box-shadow:var(--chip-shadow);
+  animation:fadeUp .55s ease both;
+}
+
+.revealed .reply-box{
+  display:block;
+}
+
+.reply-label{
+  display:block;
+  font-weight:800;
+  font-size:0.82rem;
+  letter-spacing:0.2px;
+  margin-bottom:8px;
+  color:var(--text);
+}
+
+.reply-row{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.reply-input{
+  flex:1 1 220px;
+  min-width:0;
+  border-radius:12px;
+  border:1px solid var(--panel-border);
+  background:rgba(0,0,0,0.28);
+  color:var(--text);
+  padding:10px 12px;
+  font:600 0.86rem/1 'Manrope',sans-serif;
+}
+
+.reply-input::placeholder{
+  color:rgba(255,255,255,0.6);
+}
+
+.reply-hint{
+  margin:8px 0 0;
+  font-size:0.74rem;
+  color:var(--muted);
 }
 
 #confetti-root,
@@ -851,4 +924,6 @@ body.sad .backdrop{
 
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation:none !important;transition:none !important}
+  .surprise-to{opacity:1;transform:none}
+  .to-char{opacity:1;transform:none;filter:none}
 }

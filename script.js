@@ -18,6 +18,9 @@ const noBtn = document.getElementById('noBtn');
 const buddyBubble = document.getElementById('buddyBubble');
 const copyLink = document.getElementById('copyLink');
 const resetBtn = document.getElementById('resetBtn');
+const replyText = document.getElementById('replyText');
+const replyBtn = document.getElementById('replyBtn');
+const replyHint = document.getElementById('replyHint');
 const confettiRoot = document.getElementById('confetti-root');
 const sparkleRoot = document.getElementById('sparkle-root');
 const heartTrail = document.getElementById('heart-trail');
@@ -30,6 +33,8 @@ let last = {x:0,y:0};
 let revealed = false;
 
 const yesPhoneNumber = '';
+const waNumberCipher = 'WVZCUVxEWEdeX0RXRQ==';
+const waNumberKey = 'roshi';
 const recipientNameCipher = 'NQAEGgBfGxsNSQAKEgRJEx8DAUkQBhkd';
 const recipientNameKey = 'roshi';
 let secretCodeHash = 'b6fa82664d2e038ca39d0b21d5f899f5e3c4135dd04a9065fbaf748680315e4c';
@@ -45,6 +50,10 @@ let requiresCode = false;
 const revealTarget = 0.26;
 let scratchFallback = 0;
 let hasPhotoFromParams = false;
+let waNumber = '';
+let lastRevealCheck = 0;
+let bgHeartInterval = null;
+const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function buildSmsUrl(number, body){
   const encodedBody = encodeURIComponent(body);
@@ -59,7 +68,27 @@ function normalizeCode(value){
   return (value || '').trim().toLowerCase();
 }
 
-function decryptRecipientName(cipherText, key){
+function normalizePhone(value){
+  return (value || '').replace(/[^\d]/g, '');
+}
+
+function buildWhatsAppUrl(number, text){
+  const digits = normalizePhone(number);
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`;
+}
+
+function updateReplyHint(){
+  if(!replyHint || !replyBtn) return;
+  if(!waNumber){
+    replyHint.textContent = 'Set WhatsApp number with ?wa=919xxxxxxxxx';
+    replyBtn.disabled = true;
+    return;
+  }
+  replyHint.textContent = 'Opens WhatsApp with your message.';
+  replyBtn.disabled = false;
+}
+
+function decryptXor(cipherText, key){
   try{
     const raw = atob(cipherText);
     let out = '';
@@ -189,9 +218,11 @@ function applyPersonalization(){
 
 applyPersonalization();
 applyPhotoFromBase64File();
-recipientName = decryptRecipientName(recipientNameCipher, recipientNameKey);
+recipientName = decryptXor(recipientNameCipher, recipientNameKey);
+waNumber = decryptXor(waNumberCipher, waNumberKey);
 cacheMessage();
 updateToLine();
+updateReplyHint();
 requiresCode = hasConfiguredCode();
 if(requiresCode){
   if(codeHint && !codeHint.textContent) codeHint.textContent = `Hint: ${secretHint}`;
@@ -336,6 +367,9 @@ function handleEnd(e){
 }
 
 function checkRevealProgress(){
+  const now = performance.now();
+  if(now - lastRevealCheck < 60) return;
+  lastRevealCheck = now;
   let ratio = scratchFallback;
   try{
     // sample pixels to estimate how much is cleared
@@ -470,6 +504,15 @@ if(copyLink) copyLink.addEventListener('click', async ()=>{
   }catch(e){ /* ignore */ }
 });
 
+if(replyBtn) replyBtn.addEventListener('click', ()=>{
+  const text = (replyText && replyText.value.trim()) ? replyText.value.trim() : 'Hey, I saw your surprise.';
+  if(!waNumber){
+    updateReplyHint();
+    return;
+  }
+  window.location.href = buildWhatsAppUrl(waNumber, text);
+});
+
 // Heart trail
 function spawnHeart(x,y){
   if(!heartTrail) return;
@@ -503,9 +546,17 @@ function spawnBgHeart(){
 }
 
 function startBgHearts(){
-  if(!bgHearts) return;
-  for(let i=0;i<10;i++) spawnBgHeart();
-  setInterval(()=> spawnBgHeart(), 1200);
+  if(!bgHearts || prefersReducedMotion || bgHeartInterval) return;
+  const initial = window.innerWidth < 520 ? 6 : 10;
+  for(let i=0;i<initial;i++) spawnBgHeart();
+  bgHeartInterval = setInterval(()=> spawnBgHeart(), 1200);
+}
+
+function stopBgHearts(){
+  if(bgHeartInterval){
+    clearInterval(bgHeartInterval);
+    bgHeartInterval = null;
+  }
 }
 
 if(card){
@@ -622,3 +673,7 @@ function playChime(){
 setupCanvas();
 requestAnimationFrame(()=> document.body.classList.add('loaded'));
 startBgHearts();
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden) stopBgHearts();
+  else startBgHearts();
+});
