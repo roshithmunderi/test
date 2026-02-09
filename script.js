@@ -4,6 +4,7 @@ const backdrop = document.getElementById('backdrop');
 const photo = document.getElementById('photo');
 const surpriseTitle = document.getElementById('surpriseTitle');
 const surpriseText = document.getElementById('surpriseText');
+const surpriseTo = document.getElementById('surpriseTo');
 const codeGate = document.getElementById('codeGate');
 const codeInput = document.getElementById('codeInput');
 const codeBtn = document.getElementById('codeBtn');
@@ -20,6 +21,7 @@ const resetBtn = document.getElementById('resetBtn');
 const confettiRoot = document.getElementById('confetti-root');
 const sparkleRoot = document.getElementById('sparkle-root');
 const heartTrail = document.getElementById('heart-trail');
+const bgHearts = document.getElementById('bg-hearts');
 const card = document.querySelector('.card');
 
 let ctx, w, h;
@@ -28,10 +30,13 @@ let last = {x:0,y:0};
 let revealed = false;
 
 const yesPhoneNumber = '';
+const recipientNameCipher = 'NQAEGgBfGxsNSQAKEgRJEx8DAUkQBhkd';
+const recipientNameKey = 'roshi';
 let secretCodeHash = 'b6fa82664d2e038ca39d0b21d5f899f5e3c4135dd04a9065fbaf748680315e4c';
 let legacySecretCode = '';
 let secretHint = 'our little word';
 let fullMessage = '';
+let recipientName = '';
 let typingTimer = null;
 let lastTrailTime = 0;
 let lastDustTime = 0;
@@ -52,6 +57,19 @@ function rand(min,max){ return Math.random()*(max-min)+min }
 
 function normalizeCode(value){
   return (value || '').trim().toLowerCase();
+}
+
+function decryptRecipientName(cipherText, key){
+  try{
+    const raw = atob(cipherText);
+    let out = '';
+    for(let i=0;i<raw.length;i++){
+      out += String.fromCharCode(raw.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+    }
+    return out;
+  }catch(e){
+    return '';
+  }
 }
 
 async function sha256Hex(value){
@@ -91,6 +109,35 @@ function cacheMessage(){
   fullMessage = surpriseText.textContent || '';
 }
 
+function buildToLine(label){
+  if(!surpriseTo) return;
+  surpriseTo.textContent = '';
+  surpriseTo.setAttribute('aria-label', `To: ${label}`);
+
+  const prefix = document.createElement('span');
+  prefix.className = 'to-prefix';
+  prefix.textContent = 'To:';
+
+  const nameWrap = document.createElement('span');
+  nameWrap.className = 'to-name';
+  [...label].forEach((ch, idx)=>{
+    const part = document.createElement('span');
+    part.className = 'to-char';
+    part.style.setProperty('--i', String(idx));
+    part.textContent = ch === ' ' ? '\u00A0' : ch;
+    nameWrap.appendChild(part);
+  });
+
+  surpriseTo.appendChild(prefix);
+  surpriseTo.appendChild(nameWrap);
+}
+
+function updateToLine(){
+  if(!surpriseTo) return;
+  const label = recipientName || 'you';
+  buildToLine(label);
+}
+
 async function applyPhotoFromBase64File(path = 'base64.txt'){
   if(!photo || hasPhotoFromParams) return;
   try{
@@ -120,6 +167,7 @@ function applyPersonalization(){
     const subEl = document.getElementById('pageSubtitle');
     if(titleEl && to) titleEl.textContent = `A surprise for ${to}`;
     if(subEl && from) subEl.textContent = `From ${from} — scratch to reveal`;
+    // Name for the "To:" line is intentionally loaded from encrypted script value.
     if(surpriseTitle && to) surpriseTitle.textContent = `Dear ${to},`;
     if(surpriseText && msg) surpriseText.textContent = msg;
     if(photo && photoUrl){
@@ -141,7 +189,9 @@ function applyPersonalization(){
 
 applyPersonalization();
 applyPhotoFromBase64File();
+recipientName = decryptRecipientName(recipientNameCipher, recipientNameKey);
 cacheMessage();
+updateToLine();
 requiresCode = hasConfiguredCode();
 if(requiresCode){
   if(codeHint && !codeHint.textContent) codeHint.textContent = `Hint: ${secretHint}`;
@@ -319,6 +369,7 @@ function startTypewriter(){
   clearTimeout(typingTimer);
   surpriseText.textContent = '';
   surpriseText.classList.add('typing');
+  if(surpriseTo) surpriseTo.classList.remove('show');
   let i = 0;
   const startDelay = 180;
   const tick = ()=>{
@@ -328,6 +379,11 @@ function startTypewriter(){
       typingTimer = setTimeout(tick, 18 + Math.random()*22);
     }else{
       surpriseText.classList.remove('typing');
+      if(surpriseTo){
+        surpriseTo.classList.remove('show');
+        void surpriseTo.offsetWidth;
+        surpriseTo.classList.add('show');
+      }
     }
   };
   typingTimer = setTimeout(tick, startDelay);
@@ -338,6 +394,7 @@ function resetTypewriter(){
   clearTimeout(typingTimer);
   surpriseText.classList.remove('typing');
   surpriseText.textContent = fullMessage;
+  if(surpriseTo) surpriseTo.classList.remove('show');
 }
 
 function onFullyRevealed(){
@@ -425,6 +482,30 @@ function spawnHeart(x,y){
   el.style.color = `hsl(${rand(330,355)} 80% 70%)`;
   heartTrail.appendChild(el);
   setTimeout(()=> el.remove(), 1200);
+}
+
+// Background hearts
+function spawnBgHeart(){
+  if(!bgHearts) return;
+  const heart = document.createElement('div');
+  heart.className = 'bg-heart';
+  heart.textContent = Math.random() > 0.5 ? '❤' : '❥';
+  const size = rand(12, 28);
+  heart.style.fontSize = `${size}px`;
+  heart.style.left = `${rand(-5, 105)}%`;
+  heart.style.bottom = `-${rand(10, 30)}px`;
+  heart.style.color = `hsla(${rand(330, 350)} 85% ${rand(65, 85)}% / ${rand(0.35, 0.7)})`;
+  const duration = rand(12, 20);
+  heart.style.animationDuration = `${duration}s`;
+  heart.style.animationDelay = `${rand(0, 1.5)}s`;
+  bgHearts.appendChild(heart);
+  setTimeout(()=> heart.remove(), (duration + 2) * 1000);
+}
+
+function startBgHearts(){
+  if(!bgHearts) return;
+  for(let i=0;i<10;i++) spawnBgHeart();
+  setInterval(()=> spawnBgHeart(), 1200);
 }
 
 if(card){
@@ -540,3 +621,4 @@ function playChime(){
 // initialize
 setupCanvas();
 requestAnimationFrame(()=> document.body.classList.add('loaded'));
+startBgHearts();
