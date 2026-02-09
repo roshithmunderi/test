@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Scratch Surprise</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="card">
+        <header class="hdr">
+          <div class="logo">❤</div>
+          <div>
+            <h1 id="pageTitle" class="title">A Little Surprise</h1>
+            <p id="pageSubtitle" class="subtitle">Unlock the secret, then scratch to reveal</p>
+          </div>
+        </header>
+
+        <div class="reveal-area">
+          <div id="backdrop" class="backdrop">
+            <div id="photo" class="photo" aria-hidden="true"></div>
+            <div class="message">
+              <h2 id="surpriseTitle">To the girl with light brown eyes</h2>
+              <p id="surpriseText">Your light brown eyes carry a quiet warmth that steadies me and makes ordinary moments feel like home. You mean more to me than I can ever say.</p>
+              <div class="final-actions">
+                <!-- <button id="yesBtn" class="btn">Yes ❤</button> -->
+                <!-- <button id="noBtn" class="btn secondary">No</button> -->
+              </div>
+            </div>
+          </div>
+
+          <div class="scratch-status" aria-live="polite">
+            <span id="scratchPercent" class="scratch-percent">0%</span>
+            <div class="scratch-meter">
+              <span id="scratchFill" class="scratch-fill"></span>
+            </div>
+          </div>
+
+          <div id="codeGate" class="code-gate" aria-live="polite">
+            <div class="code-card">
+              <h3 class="code-title">Unlock the secret</h3>
+              <!-- <p id="codeHint" class="code-hint">Hint: our little word</p> -->
+              <div class="code-row">
+                <input id="codeInput" class="code-input" type="password" inputmode="text" placeholder="Enter code" autocomplete="off" />
+                <button id="codeBtn" class="btn">Unlock</button>
+              </div>
+              <p id="codeError" class="code-error" aria-live="polite"></p>
+            </div>
+          </div>
+
+          <div id="scratchDust" class="scratch-dust" aria-hidden="true"></div>
+          <canvas id="scratch" class="scratch" aria-label="Scratch to reveal the message"></canvas>
+        </div>
+
+        <p class="help">Tip: Use your finger to scratch the silver overlay.</p>
+        <div class="share-row">
+          <!-- <button id="copyLink" class="btn">Copy share link</button> -->
+          <button id="resetBtn" class="btn secondary">Reset</button>
+        </div>
+      </section>
+    </main>
+
+    <div id="confetti-root" aria-hidden="true"></div>
+    <div id="sparkle-root" aria-hidden="true"></div>
+    <div id="heart-trail" aria-hidden="true"></div>
+    <div id="emotionBuddy" class="buddy" aria-hidden="true">
+      <p id="buddyBubble" class="buddy-bubble">Type the code and unlock this.</p>
+      <div class="buddy-head">
+        <span class="eye left"></span>
+        <span class="eye right"></span>
+        <span class="mouth"></span>
+        <span class="blush left"></span>
+        <span class="blush right"></span>
+      </div>
+      <div class="buddy-heart"></div>
+    </div>
+    <div class="watermark" aria-hidden="true">developed by _roshi_th_</div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
